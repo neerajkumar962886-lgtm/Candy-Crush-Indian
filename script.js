@@ -1,53 +1,72 @@
+const width = 8;
 const foods = ["🍛","🥟","🍬","🧊","🍡","🍵","🫓","🟠"];
-const board = document.getElementById("board");
+let board = document.getElementById("board");
+let squares = [];
+let score = 0;
 
-let tiles = [];
-let selectedTile = null;
+let squareBeingDragged;
+let squareBeingReplaced;
 
 // create board
-for (let i = 0; i < 64; i++) {
-  let tile = document.createElement("div");
-  tile.classList.add("tile");
+function createBoard() {
+  for (let i = 0; i < width*width; i++) {
+    const square = document.createElement("div");
+    square.setAttribute("draggable", true);
+    square.setAttribute("id", i);
 
-  let food = foods[Math.floor(Math.random()*foods.length)];
-  tile.innerText = food;
+    let food = foods[Math.floor(Math.random()*foods.length)];
+    square.innerText = food;
 
-  tile.addEventListener("click", () => handleClick(tile));
-
-  board.appendChild(tile);
-  tiles.push(tile);
-}
-
-// click system
-function handleClick(tile) {
-  if (!selectedTile) {
-    selectedTile = tile;
-    tile.style.border = "2px solid red";
-  } else {
-    swap(tile, selectedTile);
-    selectedTile.style.border = "1px solid white";
-    selectedTile = null;
-    checkMatch();
+    board.appendChild(square);
+    squares.push(square);
   }
 }
+createBoard();
 
-// swap tiles
-function swap(a, b) {
-  let temp = a.innerText;
-  a.innerText = b.innerText;
-  b.innerText = temp;
+// drag events
+squares.forEach(square => {
+  square.addEventListener("dragstart", dragStart);
+  square.addEventListener("dragover", e => e.preventDefault());
+  square.addEventListener("drop", dragDrop);
+});
+
+function dragStart() {
+  squareBeingDragged = this;
 }
 
-// check match (simple row match)
-function checkMatch() {
-  for (let i = 0; i < 64; i++) {
-    if (
-      tiles[i].innerText === tiles[i+1]?.innerText &&
-      tiles[i].innerText === tiles[i+2]?.innerText
-    ) {
-      tiles[i].innerText = "";
-      tiles[i+1].innerText = "";
-      tiles[i+2].innerText = "";
+function dragDrop() {
+  squareBeingReplaced = this;
+
+  let temp = squareBeingDragged.innerText;
+  squareBeingDragged.innerText = squareBeingReplaced.innerText;
+  squareBeingReplaced.innerText = temp;
+}
+
+// check matches
+function checkRowMatch() {
+  for (let i = 0; i < 61; i++) {
+    let row = [i, i+1, i+2];
+    let food = squares[i].innerText;
+
+    if (row.every(index => squares[index].innerText === food && food != "")) {
+      row.forEach(index => squares[index].innerText = "");
+      score += 10;
     }
   }
 }
+
+// gravity
+function moveDown() {
+  for (let i = 0; i < 56; i++) {
+    if (squares[i+8].innerText === "") {
+      squares[i+8].innerText = squares[i].innerText;
+      squares[i].innerText = "";
+    }
+  }
+}
+
+// game loop
+setInterval(() => {
+  checkRowMatch();
+  moveDown();
+}, 200);
