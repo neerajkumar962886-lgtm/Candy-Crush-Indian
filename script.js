@@ -1,72 +1,56 @@
-const width = 8;
-const foods = ["🍛","🥟","🍬","🧊","🍡","🍵","🫓","🟠"];
-let board = document.getElementById("board");
-let squares = [];
+const holes = document.querySelectorAll(".hole");
+const scoreBoard = document.querySelector(".score");
+const moles = document.querySelectorAll(".mole");
+const button = document.querySelector("#start");
+let lastHole;
+let timeUp = false;
 let score = 0;
 
-let squareBeingDragged;
-let squareBeingReplaced;
+function randomTime(min, max) {
+  return Math.round(Math.random() * (max - min) + min);
+}
 
-// create board
-function createBoard() {
-  for (let i = 0; i < width*width; i++) {
-    const square = document.createElement("div");
-    square.setAttribute("draggable", true);
-    square.setAttribute("id", i);
+function randomHole(holes) {
+  const idx = Math.floor(Math.random() * holes.length);
+  const hole = holes[idx];
 
-    let food = foods[Math.floor(Math.random()*foods.length)];
-    square.innerText = food;
-
-    board.appendChild(square);
-    squares.push(square);
+  if (hole === lastHole) {
+    console.log("Same one");
+    return randomHole(holes);
   }
-}
-createBoard();
 
-// drag events
-squares.forEach(square => {
-  square.addEventListener("dragstart", dragStart);
-  square.addEventListener("dragover", e => e.preventDefault());
-  square.addEventListener("drop", dragDrop);
-});
-
-function dragStart() {
-  squareBeingDragged = this;
+  lastHole = hole;
+  return hole;
 }
 
-function dragDrop() {
-  squareBeingReplaced = this;
-
-  let temp = squareBeingDragged.innerText;
-  squareBeingDragged.innerText = squareBeingReplaced.innerText;
-  squareBeingReplaced.innerText = temp;
+function peep() {
+  const time = randomTime(200, 1000);
+  const hole = randomHole(holes);
+  hole.classList.add("up");
+  setTimeout(() => {
+    hole.classList.remove("up");
+    if (!timeUp) peep();
+  }, time);
 }
 
-// check matches
-function checkRowMatch() {
-  for (let i = 0; i < 61; i++) {
-    let row = [i, i+1, i+2];
-    let food = squares[i].innerText;
-
-    if (row.every(index => squares[index].innerText === food && food != "")) {
-      row.forEach(index => squares[index].innerText = "");
-      score += 10;
-    }
-  }
+function startGame() {
+  scoreBoard.textContent = 0;
+  timeUp = false;
+  score = 0;
+  button.style.visibility = "hidden";
+  peep();
+  setTimeout(() => {
+    timeUp = true;
+    button.innerHTML = "Try again?";
+    button.style.visibility = "visible";
+  }, 10000);
 }
 
-// gravity
-function moveDown() {
-  for (let i = 0; i < 56; i++) {
-    if (squares[i+8].innerText === "") {
-      squares[i+8].innerText = squares[i].innerText;
-      squares[i].innerText = "";
-    }
-  }
+function bonk(e) {
+  if (!e.isTrusted) return;
+  score++;
+  this.classList.remove("up");
+  scoreBoard.textContent = score;
 }
 
-// game loop
-setInterval(() => {
-  checkRowMatch();
-  moveDown();
-}, 200);
+moles.forEach((mole) => mole.addEventListener("click", bonk));
